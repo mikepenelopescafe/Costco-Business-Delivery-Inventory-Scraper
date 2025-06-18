@@ -8,6 +8,7 @@
     "scrape": "node api/scrape.js",
     "db:setup": "node scripts/setup-database.js",
     "db:reset": "node scripts/reset-database.js",
+    "db:square-setup": "node scripts/setup-square-tables.js",
     "start": "node server.js"
   },
   "keywords": ["costco", "scraper", "inventory", "puppeteer"],
@@ -16,7 +17,10 @@
   "dependencies": {
     "puppeteer": "^22.8.2",
     "pg": "^8.11.3",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "squareup": "^35.0.0",
+    "@anthropic-ai/sdk": "^0.24.3",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.0"

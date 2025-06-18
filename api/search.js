@@ -10,6 +10,7 @@ module.exports = async (req, res) => {
       const { 
         q, 
         query,
+        context,
         category, 
         limit, 
         offset,
@@ -54,7 +55,8 @@ module.exports = async (req, res) => {
       const options = {
         category,
         limit: searchLimit,
-        offset: searchOffset
+        offset: searchOffset,
+        context: context // Pass context to database layer
       };
       
       const searchResults = await db.searchProducts(searchTerm.trim(), options);
@@ -73,30 +75,51 @@ module.exports = async (req, res) => {
         hasPrev: searchOffset > 0
       };
       
-      // Group results by category for better UX
-      const resultsByCategory = {};
-      searchResults.products.forEach(product => {
-        const cat = product.category || 'Other';
-        if (!resultsByCategory[cat]) {
-          resultsByCategory[cat] = [];
-        }
-        resultsByCategory[cat].push(product);
-      });
-      
-      res.status(200).json({
-        success: true,
-        search: {
-          term: searchResults.searchTerm,
-          total: searchResults.total,
-          returned: searchResults.products.length
-        },
-        data: searchResults.products,
-        grouped_by_category: resultsByCategory,
-        pagination,
-        filters: {
-          category: category || 'all'
-        }
-      });
+      // Format response based on context
+      if (context === 'ingredient_assignment') {
+        // Simplified format for ingredient assignment context
+        const products = searchResults.products.map(product => ({
+          id: product.id.toString(),
+          costco_product_id: product.costco_product_id,
+          name: product.name,
+          category: product.category,
+          current_price: parseFloat(product.current_price || 0),
+          price_per_unit: product.price_per_unit || 'per unit',
+          last_updated: product.price_updated_at || product.last_seen_date
+        }));
+        
+        res.status(200).json({
+          products,
+          total: searchResults.total
+        });
+      } else {
+        // Original detailed format for general search
+        // Group results by category for better UX
+        const resultsByCategory = {};
+        searchResults.products.forEach(product => {
+          const cat = product.category || 'Other';
+          if (!resultsByCategory[cat]) {
+            resultsByCategory[cat] = [];
+          }
+          resultsByCategory[cat].push(product);
+        });
+        
+        res.status(200).json({
+          success: true,
+          search: {
+            term: searchResults.searchTerm,
+            total: searchResults.total,
+            returned: searchResults.products.length
+          },
+          data: searchResults.products,
+          grouped_by_category: resultsByCategory,
+          pagination,
+          filters: {
+            category: category || 'all',
+            context: context || 'general'
+          }
+        });
+      }
       
     } else {
       res.status(405).json({
