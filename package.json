@@ -18,7 +18,7 @@
     "puppeteer": "^22.8.2",
     "pg": "^8.11.3",
     "dotenv": "^16.4.5",
-    "squareup": "^35.0.0",
+    "square": "^42.3.0",
     "@anthropic-ai/sdk": "^0.24.3",
     "uuid": "^9.0.1"
   },
