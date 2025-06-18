@@ -1,9 +1,10 @@
-# Costco Business Delivery Inventory Scraper
+# Restaurant Analytics Platform
 
-A robust web scraping system that extracts grocery inventory from costcobusinessdelivery.com with location-specific filtering.
+A comprehensive system that combines Costco inventory scraping with Square POS integration and AI-powered menu cost analysis.
 
 ## Features
 
+### Costco Inventory Scraping
 - ✅ Comprehensive grocery category scraping (11 categories)
 - ✅ UI-based location filtering (ZIP code 80031)
 - ✅ PostgreSQL database with product tracking and price history
@@ -13,6 +14,21 @@ A robust web scraping system that extracts grocery inventory from costcobusiness
 - ✅ Robust error handling and logging
 - ✅ Vercel deployment configuration
 - ✅ Headless browser operation
+
+### Square POS Integration
+- ✅ OAuth 2.0 authentication with Square
+- ✅ Automated menu catalog synchronization
+- ✅ Real-time sync progress tracking
+- ✅ Secure token storage with AES-256 encryption
+- ✅ Menu item management and filtering
+
+### AI-Powered Cost Analysis
+- ✅ Anthropic Claude integration for intelligent cost calculations
+- ✅ Ingredient assignment to menu items
+- ✅ Automated portion size and waste factor calculations
+- ✅ Margin and food cost percentage analysis
+- ✅ Bulk cost calculation processing
+- ✅ Confidence scoring for accuracy assessment
 
 ## Location Filtering
 
@@ -35,26 +51,47 @@ npm install
 Create a `.env` file with the following variables:
 
 ```bash
+# Core Configuration
 DATABASE_URL=your_postgresql_connection_string
-COSTCO_ZIP_CODE=80031
 API_KEY=your_api_secret_key
+
+# Costco Scraping
+COSTCO_ZIP_CODE=80031
 SCRAPE_DELAY_MS=2000
 MAX_RETRIES=3
+
+# Square Integration
+SQUARE_APP_ID=your_square_app_id
+SQUARE_APP_SECRET=your_square_app_secret
+SQUARE_ENVIRONMENT=sandbox
+ENCRYPTION_KEY=your_32_character_encryption_key
+
+# AI Cost Analysis
+ANTHROPIC_API_KEY=your_anthropic_api_key
 ```
 
 Required environment variables:
 - `DATABASE_URL`: PostgreSQL connection string (Neon, Railway, etc.)
-- `COSTCO_ZIP_CODE`: Target zip code for location filtering (default: 80031)
 - `API_KEY`: Secret key for API authentication
+- `COSTCO_ZIP_CODE`: Target zip code for location filtering (default: 80031)
 - `SCRAPE_DELAY_MS`: Delay between requests in milliseconds (default: 2000)
 - `MAX_RETRIES`: Maximum retry attempts (default: 3)
+- `SQUARE_APP_ID`: Square application ID from Square Developer Dashboard
+- `SQUARE_APP_SECRET`: Square application secret
+- `SQUARE_ENVIRONMENT`: Either 'sandbox' or 'production'
+- `ENCRYPTION_KEY`: 32-character key for encrypting Square tokens
+- `ANTHROPIC_API_KEY`: API key for Claude cost analysis
 
 ### 3. Database Setup
 
-Run the database setup script to create tables:
+Run the database setup scripts to create tables:
 
 ```bash
+# Set up Costco scraper tables
 npm run db:setup
+
+# Set up Square integration tables
+npm run db:square-setup
 ```
 
 To reset the database (drops and recreates all tables):
@@ -65,7 +102,40 @@ npm run db:reset
 
 ## Usage
 
-### Manual Scraping
+### Square POS Integration
+
+#### 1. Complete OAuth Setup
+Visit the OAuth authorization endpoint to connect your Square account:
+```
+GET /api/square/oauth/authorize
+```
+
+#### 2. Sync Square Menu Catalog
+```bash
+curl -X POST http://localhost:3000/api/square/sync \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"sync_type": "full"}'
+```
+
+#### 3. Assign Ingredients to Menu Items
+```bash
+curl -X POST http://localhost:3000/api/menu-items/123/ingredients \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"ingredients": [{"costco_product_id": "456"}]}'
+```
+
+#### 4. Calculate Menu Item Costs
+```bash
+curl -X POST http://localhost:3000/api/menu-items/123/calculate-cost \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+### Costco Inventory Scraping
+
+#### Manual Scraping
 
 Run scraper directly:
 
@@ -175,6 +245,89 @@ curl http://localhost:3000/api/products/123/price-history?limit=50
 curl "http://localhost:3000/api/products/123/price-history?start_date=2025-01-01&end_date=2025-06-01"
 ```
 
+#### Square POS Endpoints
+
+##### GET /api/square/oauth/authorize
+Initiate Square OAuth flow to connect restaurant account.
+
+##### GET /api/square/oauth/callback
+Handle Square OAuth callback (automatic).
+
+##### POST /api/square/sync
+Sync Square menu catalog with optional filtering.
+
+```bash
+curl -X POST http://localhost:3000/api/square/sync \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"sync_type": "full", "categories_only": ["FOOD"]}'
+```
+
+##### GET /api/square/sync/{syncId}/status
+Check status of ongoing or completed sync.
+
+##### GET /api/square/sync/history
+Get sync history with pagination.
+
+#### Menu Item Management
+
+##### GET /api/menu-items
+Get all menu items with filtering and cost analysis.
+
+**Parameters:**
+- `category` - Filter by menu category
+- `active_only` - Show only active items (default: true)
+- `with_costs` - Include cost calculations (default: true)
+- `search` - Search in item names/descriptions
+- `limit` - Items per page (default: 50, max: 200)
+- `sort_by` - Sort field: name, category, margin, cost
+
+```bash
+curl -H "x-api-key: YOUR_API_KEY" \
+  "http://localhost:3000/api/menu-items?category=Salads&with_costs=true"
+```
+
+##### GET /api/menu-items/{id}
+Get detailed menu item information including ingredients and cost analysis.
+
+##### POST /api/menu-items/{id}/ingredients
+Assign Costco products as ingredients to menu items.
+
+```bash
+curl -X POST http://localhost:3000/api/menu-items/123/ingredients \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"ingredients": [{"costco_product_id": "456"}], "replace_existing": false}'
+```
+
+##### DELETE /api/menu-items/{id}/ingredients/{ingredientId}
+Remove ingredient assignment from menu item.
+
+#### Cost Analysis
+
+##### POST /api/menu-items/{id}/calculate-cost
+Calculate food cost for specific menu item using AI analysis.
+
+```bash
+curl -X POST http://localhost:3000/api/menu-items/123/calculate-cost \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"force_recalculate": true}'
+```
+
+##### POST /api/cost-analysis/bulk-calculate
+Start bulk cost calculation for multiple menu items.
+
+```bash
+curl -X POST http://localhost:3000/api/cost-analysis/bulk-calculate \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"menu_item_ids": ["123", "456"], "only_missing": true}'
+```
+
+##### GET /api/cost-analysis/job/{jobId}/status
+Check status of bulk calculation job.
+
 #### Discovery Endpoints
 
 ##### GET /api/categories
@@ -189,6 +342,7 @@ Search products by name with full-text search and relevance ranking.
 
 **Parameters:**
 - `q` or `query` - Search term (required, min 2 characters)
+- `context` - Search context: 'ingredient_assignment' for optimized ingredient selection
 - `category` - Filter results by category
 - `limit` - Results per page (default: 50, max: 200)
 - `offset` - Results offset
@@ -197,6 +351,9 @@ Search products by name with full-text search and relevance ranking.
 ```bash
 # Basic search
 curl "http://localhost:3000/api/search?q=bread"
+
+# Search for ingredient assignment (prioritizes food categories)
+curl "http://localhost:3000/api/search?q=chicken&context=ingredient_assignment"
 
 # Search within category
 curl "http://localhost:3000/api/search?q=organic&category=Fresh Produce"
@@ -222,7 +379,7 @@ The scraper automatically discovers and processes these grocery categories:
 
 ## Database Schema
 
-### Tables
+### Costco Scraper Tables
 
 #### products
 - `id`: Primary key
@@ -253,6 +410,65 @@ The scraper automatically discovers and processes these grocery categories:
 - `error_message`: Error details if job failed
 - `started_at`, `completed_at`: Job timing
 - `created_at`: Timestamp
+
+### Square Integration Tables
+
+#### restaurant_config
+- `id`: Primary key
+- `restaurant_name`: Restaurant business name
+- `square_merchant_id`: Square merchant identifier
+- `square_access_token`: Encrypted Square access token
+- `square_refresh_token`: Encrypted Square refresh token
+- `square_token_expires_at`: Token expiration timestamp
+- `target_food_cost_percentage`: Target food cost percentage
+- `created_at`, `updated_at`: Timestamps
+
+#### square_menu_items
+- `id`: Primary key
+- `square_item_id`: Unique Square item identifier
+- `square_variation_id`: Square variation identifier
+- `name`: Menu item name
+- `description`: Menu item description
+- `category`: Menu item category
+- `price`: Menu item price
+- `currency`: Currency (default: USD)
+- `is_active`: Whether item is currently active
+- `last_synced_at`: Last sync timestamp
+- `created_at`, `updated_at`: Timestamps
+
+#### menu_item_ingredients
+- `id`: Primary key
+- `menu_item_id`: Foreign key to square_menu_items
+- `costco_product_id`: Foreign key to products
+- `assigned_by_user_id`: User who assigned ingredient
+- `created_at`: Assignment timestamp
+
+#### menu_item_costs
+- `id`: Primary key
+- `menu_item_id`: Foreign key to square_menu_items
+- `calculated_cost`: Calculated food cost
+- `cost_breakdown`: JSON breakdown by ingredient
+- `margin_percentage`: Profit margin percentage
+- `food_cost_percentage`: Food cost percentage
+- `confidence_score`: AI confidence score (0-1)
+- `calculation_method`: Method used (llm, manual_override)
+- `llm_explanation`: AI explanation of calculation
+- `calculated_at`: Calculation timestamp
+- `created_at`: Record creation timestamp
+
+#### square_sync_logs
+- `id`: Primary key (UUID)
+- `sync_type`: Type of sync (manual, scheduled, webhook)
+- `sync_status`: Status (started, completed, failed)
+- `items_found`: Number of items found in Square
+- `items_created`: Number of new items created
+- `items_updated`: Number of items updated
+- `items_deactivated`: Number of items deactivated
+- `error_message`: Error message if failed
+- `error_details`: JSON error details
+- `started_at`: Sync start timestamp
+- `completed_at`: Sync completion timestamp
+- `duration_seconds`: Sync duration
 
 ### Key Features
 
