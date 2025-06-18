@@ -58,3 +58,12 @@ jobs:
         name: scraping-logs
         path: logs/
         retention-days: 7
+    
+    - name: Upload debug screenshots on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: debug-screenshots
+        path: |
+          debug-*.png
+        retention-days: 7
