@@ -1,0 +1,27 @@
+{
+  "name": "costco-inventory-scraper",
+  "version": "1.0.0",
+  "description": "Costco Business Delivery Inventory Scraper - Phase 1 MVP",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch api/scrape.js",
+    "scrape": "node api/scrape.js",
+    "db:setup": "node scripts/setup-database.js",
+    "db:reset": "node scripts/reset-database.js",
+    "start": "node server.js"
+  },
+  "keywords": ["costco", "scraper", "inventory", "puppeteer"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^22.8.2",
+    "pg": "^8.11.3",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

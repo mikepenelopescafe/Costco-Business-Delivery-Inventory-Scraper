@@ -1,0 +1,60 @@
+name: Scheduled Costco Scraping
+
+on:
+  # Run every 6 hours
+  schedule:
+    - cron: '0 */6 * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      category:
+        description: 'Specific category to scrape (optional)'
+        required: false
+        type: string
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Install Chromium for Puppeteer
+      run: |
+        npx puppeteer browsers install chrome
+    
+    - name: Run scraper
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        COSTCO_ZIP_CODE: ${{ secrets.COSTCO_ZIP_CODE }}
+        SCRAPE_DELAY_MS: ${{ secrets.SCRAPE_DELAY_MS }}
+        MAX_RETRIES: ${{ secrets.MAX_RETRIES }}
+      run: |
+        if [ -n "${{ github.event.inputs.category }}" ]; then
+          echo "Scraping specific category: ${{ github.event.inputs.category }}"
+          # Future: add category-specific scraping
+          npm run scrape
+        else
+          echo "Running full scrape"
+          npm run scrape
+        fi
+    
+    - name: Upload logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: scraping-logs
+        path: logs/
+        retention-days: 7
