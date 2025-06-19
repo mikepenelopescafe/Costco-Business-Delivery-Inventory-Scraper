@@ -24,10 +24,12 @@ module.exports = async (req, res) => {
     const squareEnvironment = process.env.SQUARE_ENVIRONMENT || 'sandbox';
     
     if (!squareAppId) {
-      return res.status(500).json({
+      return res.status(503).json({
         error: {
-          code: 'MISSING_CONFIGURATION',
-          message: 'Square application ID not configured'
+          code: 'SQUARE_NOT_CONFIGURED',
+          message: 'Square integration is not configured',
+          details: 'Square App ID is missing. Please add SQUARE_APP_ID, SQUARE_APP_SECRET, and SQUARE_ENVIRONMENT to your environment variables.',
+          setup_url: 'https://developer.squareup.com/apps'
         }
       });
     }
