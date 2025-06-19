@@ -1,8 +1,11 @@
 require('dotenv').config();
-const { Client, Environment } = require('squareup');
+const { Client, Environment } = require('square');
 const SquareDatabase = require('../../../lib/square/database');
+const cors = require('../../../lib/cors');
 
 module.exports = async (req, res) => {
+  // Handle CORS
+  if (cors(req, res)) return;
   const { code, state, error } = req.query;
   
   // Handle OAuth errors
@@ -50,7 +53,10 @@ module.exports = async (req, res) => {
     });
 
     // Exchange authorization code for access token
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/square/oauth/callback`;
+    // Build redirect URI - in Vercel, we need to use headers directly
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+    const redirectUri = `${protocol}://${host}/api/square/oauth/callback`;
     
     const tokenResponse = await client.oAuthApi.obtainToken({
       clientId: squareAppId,

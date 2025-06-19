@@ -44,7 +44,10 @@ module.exports = async (req, res) => {
       ? 'https://connect.squareup.com'
       : 'https://connect.squareupsandbox.com';
     
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/square/oauth/callback`;
+    // Build redirect URI - in Vercel, we need to use headers directly
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+    const redirectUri = `${protocol}://${host}/api/square/oauth/callback`;
     
     const authUrl = `${baseUrl}/oauth2/authorize` +
       `?client_id=${squareAppId}` +
