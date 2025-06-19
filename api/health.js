@@ -1,7 +1,11 @@
 require('dotenv').config();
 const Database = require('../lib/database');
+const cors = require('../lib/cors');
 
 async function handler(req, res) {
+  // Handle CORS
+  if (cors(req, res)) return;
+  
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

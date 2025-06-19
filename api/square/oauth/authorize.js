@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { v4: uuidv4 } = require('uuid');
+const cors = require('../../../lib/cors');
 
 // Validate API key middleware
 function validateApiKey(req, res, next) {
@@ -13,6 +14,8 @@ function validateApiKey(req, res, next) {
 }
 
 module.exports = async (req, res) => {
+  // Handle CORS
+  if (cors(req, res)) return;
   // For development/testing - in production this would validate API key
   // validateApiKey(req, res, () => {});
   
