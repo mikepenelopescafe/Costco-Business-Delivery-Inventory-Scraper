@@ -29,40 +29,42 @@ async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  // Check if running on Vercel and warn about timeouts
-  const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
+  // Check if running on Vercel
+  const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
+  
   if (isVercel) {
-    console.warn('⚠️ WARNING: Running scraper on Vercel may timeout due to execution limits');
-    console.warn('💡 Consider using external scheduled jobs for reliable full scraping');
+    // Return message about using GitHub Actions instead of attempting to scrape
+    return res.status(200).json({
+      message: 'Scraping is not available on Vercel deployment',
+      recommendation: 'This endpoint uses GitHub Actions for scheduled scraping',
+      details: {
+        github_actions_schedule: 'Every 6 hours',
+        manual_trigger: 'Available via GitHub Actions workflow dispatch',
+        reason: 'Scraping takes 10-15 minutes which exceeds Vercel function timeouts'
+      },
+      next_steps: [
+        'Check GitHub Actions for scraping status',
+        'Use /api/jobs/latest to see most recent scrape results',
+        'Use /api/products to query scraped data'
+      ]
+    });
   }
   
+  // Only run scraper if not on Vercel (local development)
   try {
-    // Set a conservative timeout for Vercel environments
-    const timeoutMs = isVercel ? 50000 : 600000; // 50s for Vercel, 10min for local
-    
-    const scrapePromise = runScraper();
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error(`Scraping timeout after ${timeoutMs/1000} seconds. Consider using external scheduled jobs for full scraping.`)), timeoutMs)
-    );
-    
-    const result = await Promise.race([scrapePromise, timeoutPromise]);
+    const result = await runScraper();
     
     res.status(200).json({
       message: 'Scraping completed successfully',
-      execution_environment: isVercel ? 'vercel' : 'local',
-      timeout_applied: `${timeoutMs/1000}s`,
+      execution_environment: 'local',
       ...result
     });
   } catch (error) {
-    const isTimeout = error.message.includes('timeout');
-    
-    res.status(isTimeout ? 408 : 500).json({
-      error: isTimeout ? 'Scraping timeout' : 'Scraping failed',
+    res.status(500).json({
+      error: 'Scraping failed',
       message: error.message,
-      execution_environment: isVercel ? 'vercel' : 'local',
-      recommendation: isTimeout 
-        ? 'Use external scheduled jobs (GitHub Actions, Railway, etc.) for reliable full scraping'
-        : 'Check logs for detailed error information'
+      execution_environment: 'local',
+      recommendation: 'Check logs for detailed error information'
     });
   }
 }

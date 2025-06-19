@@ -1,0 +1,36 @@
+# Local development server
+server.js
+
+# Logs directory
+logs/
+
+# Screenshots directory
+screenshots/
+
+# Git files
+.git/
+.gitignore
+
+# Documentation
+*.md
+
+# Scripts
+scripts/
+
+# Environment files
+.env
+.env.*
+
+# Node modules (Vercel installs these)
+node_modules/
+
+# Test files
+*.test.js
+*.spec.js
+
+# Development files
+.vscode/
+.idea/
+
+# GitHub workflows
+.github/
