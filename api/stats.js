@@ -1,6 +1,9 @@
 const Database = require('../lib/database');
+const cors = require('../lib/cors');
 
 module.exports = async (req, res) => {
+  // Handle CORS
+  if (cors(req, res)) return;
   try {
     const db = new Database();
     

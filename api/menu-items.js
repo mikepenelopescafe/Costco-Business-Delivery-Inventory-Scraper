@@ -1,5 +1,6 @@
 require('dotenv').config();
 const SquareDatabase = require('../lib/square/database');
+const cors = require('../lib/cors');
 
 // Validate API key middleware
 function validateApiKey(req, res, next) {
@@ -13,6 +14,9 @@ function validateApiKey(req, res, next) {
 }
 
 module.exports = async (req, res) => {
+  // Handle CORS
+  if (cors(req, res)) return;
+  
   if (req.method === 'GET') {
     validateApiKey(req, res, async () => {
       try {
