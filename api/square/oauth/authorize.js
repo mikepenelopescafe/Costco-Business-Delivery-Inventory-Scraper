@@ -57,8 +57,12 @@ module.exports = async (req, res) => {
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&state=${state}`;
 
-    // Redirect to Square OAuth
-    res.redirect(authUrl);
+    // Return the auth URL for the frontend to handle
+    // The frontend should use window.location.href = authUrl
+    res.status(200).json({
+      authUrl: authUrl,
+      state: state
+    });
     
   } catch (error) {
     console.error('Square OAuth authorize error:', error);
