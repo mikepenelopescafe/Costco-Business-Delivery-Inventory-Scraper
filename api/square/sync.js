@@ -33,8 +33,9 @@ async function performSync(syncId, syncType, categoriesFilter) {
     await squareClient.initialize();
     
     // Fetch all catalog items from Square
+    console.log(`Fetching catalog items from Square...`);
     const squareItems = await squareClient.fetchAllCatalogItems();
-    console.log(`Fetched ${squareItems.length} items from Square`);
+    console.log(`✓ Fetched ${squareItems.length} items from Square`);
     
     let itemsCreated = 0;
     let itemsUpdated = 0;
@@ -43,7 +44,9 @@ async function performSync(syncId, syncType, categoriesFilter) {
     
     // Mark all existing items as inactive first (for cleanup)
     if (syncType === 'full') {
+      console.log(`Marking existing items as inactive...`);
       itemsDeactivated = await db.markAllMenuItemsInactive();
+      console.log(`✓ Marked ${itemsDeactivated} items as inactive`);
     }
     
     // Process each Square item
@@ -82,6 +85,11 @@ async function performSync(syncId, syncType, categoriesFilter) {
           items_processed: itemsProcessed
         });
         
+        // Log progress every 10%
+        if (progress % 10 === 0 && itemsProcessed > 0) {
+          console.log(`Progress: ${progress}% (${itemsProcessed}/${squareItems.length} items) - Created: ${itemsCreated}, Updated: ${itemsUpdated}`);
+        }
+        
       } catch (itemError) {
         console.error(`Error processing item ${squareItem.id}:`, itemError);
       }
@@ -110,7 +118,7 @@ async function performSync(syncId, syncType, categoriesFilter) {
       errors: []
     });
     
-    console.log(`Square sync ${syncId} completed successfully`);
+    console.log(`✓ Square sync ${syncId} completed successfully - Created: ${itemsCreated}, Updated: ${itemsUpdated}, Deactivated: ${itemsDeactivated}`);
     
   } catch (error) {
     console.error(`Square sync ${syncId} failed:`, error);
