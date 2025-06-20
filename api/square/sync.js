@@ -30,7 +30,9 @@ async function performSync(syncId, syncType, categoriesFilter) {
     });
 
     // Initialize Square client
+    console.log(`Initializing Square client...`);
     await squareClient.initialize();
+    console.log(`✓ Square client initialized successfully`);
     
     // Fetch all catalog items from Square
     console.log(`Fetching catalog items from Square...`);
@@ -122,6 +124,18 @@ async function performSync(syncId, syncType, categoriesFilter) {
     
   } catch (error) {
     console.error(`Square sync ${syncId} failed:`, error);
+    
+    // Log specific error details for debugging
+    if (error.message.includes('Square integration not configured')) {
+      console.error('Square OAuth configuration missing. Run the OAuth flow first.');
+    } else if (error.message.includes('refresh token')) {
+      console.error('Square tokens expired and refresh failed. Re-authorization required.');
+    } else {
+      console.error('Detailed error:', {
+        message: error.message,
+        stack: error.stack?.substring(0, 500)
+      });
+    }
     
     // Update sync log with error
     await db.updateSyncLog(syncId, {
